@@ -1,0 +1,40 @@
+global:
+  scrape_interval:     15s  # Tarik metrics setiap 15 detik
+  evaluation_interval: 15s  # Evaluasi rules setiap 15 detik
+  scrape_timeout:      10s  # Timeout setiap scrape
+
+# ─────────────────────────────────────────────────────────────
+# SCRAPE CONFIGS
+# ─────────────────────────────────────────────────────────────
+scrape_configs:
+
+  # ── Job 1: Prometheus self-monitoring ─────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # ── Job 2: Pushgateway (menerima PUSH dari Streamlit Cloud) ─
+  # Metrics yang masuk via push:
+  #   - prediction_total, inference_requests_total, inference_latency_seconds
+  #   - prediction_high_value_total, prediction_low_value_total
+  #   - model_confidence_high_value, model_confidence_low_value
+  #   - model_accuracy, app_requests_total
+  #   - python_gc_objects_collected_total    ← dibaca dari gc.get_stats()
+  #   - python_gc_objects_uncollectable_total
+  #   - python_gc_collections_total
+  - job_name: "pushgateway-lokal"
+    honor_labels: true          # Pakai label dari Pushgateway, bukan override
+    static_configs:
+      - targets: ["localhost:9091"]
+        labels:
+          service: "mlops-pushgateway"
+
+  # ── Job 3: App lokal via HTTP endpoint (PULL mode) ──────────
+  # Aktifkan ini HANYA jika app.py dijalankan secara LOKAL (bukan Streamlit Cloud).
+  # Semua metrics termasuk GC, process, dan platform metrics akan tersedia.
+  # - job_name: "mlops-app-lokal"
+  #   static_configs:
+  #     - targets: ["localhost:8000"]
+  #       labels:
+  #         service: "sales-classifier"
+  #         env: "local"

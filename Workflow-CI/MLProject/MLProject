@@ -1,0 +1,9 @@
+name: tobacco-risk-classification
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      data_path: {type: str, default: "tobacco_preprocessed/preprocessed.csv"}
+    command: "python modelling.py --data_path {data_path}"

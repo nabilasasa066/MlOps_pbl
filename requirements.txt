@@ -1,0 +1,8 @@
+pandas
+scikit-learn
+joblib
+mlflow
+streamlit
+prometheus_client
+matplotlib
+seaborn
