@@ -1,3 +1,0 @@
-DVC=enabled
-MLflow=enabled
-remote=https://dagshub.com/RFer7935/MLOps-Experiment.git

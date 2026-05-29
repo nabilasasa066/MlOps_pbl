@@ -1,0 +1,23 @@
+artifact_path: file:///C:/Users/NABILA SASA/OneDrive/Documents/File POLIJE/Project_MlOps/MLOps-Experiment/mlruns/470872104906109290/models/m-09b0c3a6b965492595061ba8379afc42/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.0
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.12.0
+model_id: m-09b0c3a6b965492595061ba8379afc42
+model_size_bytes: 964946
+model_uuid: m-09b0c3a6b965492595061ba8379afc42
+prompts: null
+run_id: 7bd3137f1b854d1894d884c7a9ceed02
+utc_time_created: '2026-05-29 16:27:13.806905'

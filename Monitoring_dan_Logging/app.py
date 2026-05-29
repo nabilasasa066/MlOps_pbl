@@ -106,10 +106,17 @@ def push_metrics_to_local():
 # ─────────────────────────────────────────────
 # Load Model & Accuracy
 # ─────────────────────────────────────────────
+BASE_DIR = os.path.dirname(__file__)
+
 MODEL_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "..", "Workflow-CI", "MLProject", "outputs", "rf_model.pkl"
+    BASE_DIR,
+    "..",
+    "Workflow-CI",
+    "outputs",
+    "model_proyek.pkl"
 )
+
+MODEL_PATH = os.path.abspath(MODEL_PATH)
 
 @st.cache_resource
 def load_model():
@@ -130,7 +137,15 @@ def get_fitted_scaler():
             df["Month"] = df["Tanggal"].dt.month
             df["Day"] = df["Tanggal"].dt.day
         
-        num_cols = ["Jumlah Order", "Harga", "Year", "Month", "Day"]
+        input_data = input_data[[
+            "Lokasi",
+            "Jenis_Layanan",
+            "Anggaran_Proyek_IDR",
+            "Nilai_Kontrak_Konsultan_IDR",
+            "Durasi_Bulan",
+            "Jumlah_Proyek",
+            "Progress_Fisik"
+        ]]
         scaler = StandardScaler()
         # Clean dataframe to make sure columns exist
         df_num = df[[c for c in num_cols if c in df.columns]]
@@ -140,6 +155,8 @@ def get_fitted_scaler():
     return None
 
 model = load_model()
+st.write("MODEL PATH:", MODEL_PATH)
+st.write("FILE ADA:", os.path.exists(MODEL_PATH))
 scaler = get_fitted_scaler()
 
 # Set statis untuk simulasi akurasi model dari data testing sebelumnya
@@ -148,11 +165,10 @@ MODEL_ACCURACY.set(0.986)
 # ─────────────────────────────────────────────
 # App Layout
 # ─────────────────────────────────────────────
-APP_REQUESTS.inc()
-push_metrics_to_local()
+import streamlit as st
 st.set_page_config(page_title="Sales Value Dashboard", layout="wide")
-st.title("📈 Sales Value Classification Dashboard")
-st.caption("Prediksi apakah suatu transaksi bernilai **High Value** atau **Low Value**")
+st.title("🏗️ Construction Risk Classification Dashboard")
+st.caption("Prediksi tingkat risiko proyek konstruksi")
 
 tab1, tab2, tab3 = st.tabs(["🔮 Prediksi", "📊 EDA Dataset", "📈 Model Performance"])
 
@@ -160,87 +176,159 @@ tab1, tab2, tab3 = st.tabs(["🔮 Prediksi", "📊 EDA Dataset", "📈 Model Per
 # TAB 1 — Prediksi
 # ─────────────────────────────────────────────
 with tab1:
-    st.subheader("Input Data Penjualan")
+    st.subheader("Input Data Proyek Konstruksi")
 
     col1, col2 = st.columns(2)
-    with col1:
-        tanggal      = st.date_input("Tanggal Transaksi", value=pd.to_datetime("2022-08-05"))
-        jenis_produk = st.selectbox("Jenis Produk", ["Foodpak260", "FoodpakMatte245", "CraftLaminasi290", "Other"])
-    with col2:
-        jumlah_order = st.number_input("Jumlah Order", min_value=1, max_value=1000000, value=1000)
-        harga        = st.number_input("Harga", min_value=1, max_value=1000000, value=1800)
 
-    if st.button("🔍 Prediksi Value Level"):
+    with col1:
+        lokasi = st.selectbox(
+            "Lokasi Proyek",
+            ["Jakarta", "Surabaya", "Bandung"]
+        )
+
+        jenis_layanan = st.selectbox(
+            "Jenis Layanan",
+            ["Gedung", "Jalan", "Jembatan"]
+        )
+
+        anggaran = st.number_input(
+            "Anggaran Proyek IDR",
+            min_value=1000000,
+            max_value=1000000000,
+            value=50000000
+        )
+
+        nilai_kontrak = st.number_input(
+            "Nilai Kontrak Konsultan IDR",
+            min_value=1000000,
+            max_value=1000000000,
+            value=75000000
+        )
+
+    with col2:
+        durasi_bulan = st.number_input(
+            "Durasi Proyek (Bulan)",
+            min_value=1,
+            max_value=120,
+            value=12
+        )
+
+        jumlah_proyek = st.number_input(
+            "Jumlah Proyek",
+            min_value=1,
+            max_value=1000,
+            value=50
+        )
+
+        progress_fisik = st.slider(
+            "Progress Fisik (%)",
+            min_value=0,
+            max_value=100,
+            value=50
+        )
+
+    if st.button("🔍 Prediksi Status Proyek"):
+
         if model is None:
-            st.error("Model belum tersedia. Jalankan pipeline training terlebih dahulu.")
+            st.error("Model belum tersedia.")
         else:
-            # Simple encoding for demo (same as LabelEncoder)
-            # You should ideally save and load local LabelEnoder
-            jenis_map = {"CraftLaminasi290": 0, "Foodpak260": 1, "FoodpakMatte245": 2, "Other": 3}
-            
+
+            lokasi_map = {
+                "Jakarta": 0,
+                "Surabaya": 1,
+                "Bandung": 2
+            }
+
+            layanan_map = {
+                "Gedung": 0,
+                "Jalan": 1,
+                "Jembatan": 2
+            }
+
             input_data = pd.DataFrame([{
-                "Jenis Produk": jenis_map.get(jenis_produk, 3),
-                "Jumlah Order": jumlah_order,
-                "Harga":        harga,
-                "Year":         tanggal.year,
-                "Month":        tanggal.month,
-                "Day":          tanggal.day
+                "Lokasi": lokasi_map[lokasi],
+                "Jenis_Layanan": layanan_map[jenis_layanan],
+                "Anggaran_Proyek_IDR": anggaran,
+                "Nilai_Kontrak": nilai_kontrak,
+                "Durasi_Bulan": durasi_bulan,
+                "Jumlah_Proyek": jumlah_proyek,
+                "Progress_Fisik": progress_fisik
             }])
 
-            # IMPORTANT: Scale the input using the same scaler fitted from dataset
-            if scaler is not None:
-                num_cols = ["Jumlah Order", "Harga", "Year", "Month", "Day"]
-                # Cek jika kolom ada
-                cols_to_scale = [c for c in num_cols if c in input_data.columns]
-                input_data[cols_to_scale] = scaler.transform(input_data[cols_to_scale])
-
-            # Susun urutan kolom persis seperti training:
-            input_data = input_data[["Jenis Produk", "Jumlah Order", "Harga", "Year", "Month", "Day"]]
-
             start_time = time.time()
+
             prediction = model.predict(input_data)[0]
             probability = model.predict_proba(input_data)[0]
+
             latency = time.time() - start_time
 
-            # Update Prometheus metrics
+            # Prometheus Metrics
             PREDICTION_TOTAL.inc()
             PREDICTION_LATENCY.observe(latency)
-            LAST_LATENCY.set(latency)  # Simpan kecepatan terakhir
+            LAST_LATENCY.set(latency)
+
             INFERENCE_TOTAL.inc()
             INFERENCE_LATENCY.observe(latency)
-            MODEL_CONFIDENCE_HIGH.set(float(probability[1]))
-            MODEL_CONFIDENCE_LOW.set(float(probability[0]))
-            if prediction == 1:
-                HIGH_VALUE_TOTAL.inc()
-            else:
-                LOW_VALUE_TOTAL.inc()
+# =========================
+# CONFIDENCE 
+# ========================
 
-            # Dorong metrik ke Pushgateway Lokal via Ngrok
+            # Ambil urutan class dari model (INI WAJIB biar tidak ketukar)
+            class_labels = model.classes_
+
+            # ubah probability jadi dictionary biar aman
+            proba_dict = dict(zip(class_labels, probability))
+
+            # mapping aman
+            prob_aman = proba_dict.get(1, 0)    # class 1 = proyek aman
+            prob_risiko = proba_dict.get(0, 0)  # class 0 = proyek risiko
+
+            # Prometheus Metrics
+            MODEL_CONFIDENCE_HIGH.set(float(prob_aman))
+            MODEL_CONFIDENCE_LOW.set(float(prob_risiko))
+
+            # push metrics
             push_metrics_to_local()
 
-            # Display result
+            # =========================
+            # HASIL PREDIKSI
+            # =========================
+
+            st.write("CLASS MODEL:", model.classes_)
+            
             if prediction == 1:
-                st.success(f"🟢 **HIGH VALUE** — Prediksi total penjualan tinggi")
+                st.success("🟢 Proyek Berjalan Baik")
             else:
-                st.warning(f"🔴 **LOW VALUE** — Prediksi total penjualan rendah")
+                st.warning("🔴 Proyek Berisiko")
 
-            col_a, col_b, col_c = st.columns(3)
-            col_a.metric("Low Value Probability",  f"{probability[0]:.2%}")
-            col_b.metric("High Value Probability", f"{probability[1]:.2%}")
-            col_c.metric("Latency",               f"{latency*1000:.1f} ms")
+            col1, col2, col3 = st.columns(3)
 
+            col1.metric(
+                "Probabilitas Aman",
+                f"{prob_aman:.2%}"
+            )
+
+            col2.metric(
+                "Probabilitas Risiko",
+                f"{prob_risiko:.2%}"
+            )
+
+            col3.metric(
+                "Latency",
+                f"{latency*1000:.1f} ms"
+            )
 # ─────────────────────────────────────────────
 # TAB 2 — EDA Dataset
 # ─────────────────────────────────────────────
 with tab2:
     DATA_PATH = os.path.join(os.path.dirname(__file__),
-                             "..", "data", "data_penjualan.csv")
+                             "..", "dataset", "data_konstruksi.xlsx")
     if os.path.exists(DATA_PATH):
         import matplotlib.pyplot as plt
         import seaborn as sns
 
-        df_raw = pd.read_csv(DATA_PATH, sep=";")
-        st.subheader("Preview Dataset Penjualan")
+        df_raw = pd.read_excel(DATA_PATH)
+        st.subheader("Preview Dataset Konstruksi")
         st.dataframe(df_raw.head(20), width='stretch')
 
         col1, col2 = st.columns(2)
@@ -248,31 +336,31 @@ with tab2:
             st.metric("Total Rows",    df_raw.shape[0])
             st.metric("Total Columns", df_raw.shape[1])
 
-        st.subheader("Distribusi Total (Sales Value)")
+        st.subheader("Distribusi (Anggaran Proyek)")
         fig, ax = plt.subplots(figsize=(8, 4))
-        df_raw["Total"].dropna().hist(bins=40, ax=ax, color="#3B82F6", edgecolor="white")
-        ax.axvline(df_raw["Total"].median(), color="navy", linestyle="--",
-                   label=f"Median = {df_raw['Total'].median():.1f}")
-        ax.set_xlabel("Total Penjualan")
+        df_raw["Anggaran_Proyek_IDR"].dropna().hist(bins=40, ax=ax, color="#3B82F6", edgecolor="white")
+        ax.axvline(df_raw["Anggaran_Proyek_IDR"].median(), color="navy", linestyle="--",
+                   label=f"Median = {df_raw['Anggaran_Proyek_IDR'].median():.1f}")
+        ax.set_xlabel("Anggaran_Proyek_IDR")
         ax.set_ylabel("Frequency")
         ax.legend()
         st.pyplot(fig)
 
-        st.subheader("Rata-rata Total per Jenis Produk")
+        st.subheader("Rata-rata Anggaran per Jenis Layanan")
         fig2, ax2 = plt.subplots(figsize=(6, 3))
-        df_raw.groupby("Jenis Produk")["Total"].mean().sort_values().plot(
+        df_raw.groupby("Jenis_Layanan")["Anggaran_Proyek_IDR"].mean().sort_values().plot(
             kind="barh", ax=ax2, color="#10B981")
-        ax2.set_xlabel("Avg Total Penjualan")
+        ax2.set_xlabel("Avg Anggaran_Proyek_IDR")
         st.pyplot(fig2)
 
     else:
-        st.warning("Dataset data_penjualan.csv tidak ditemukan di folder data/. Copy file terlebih dahulu.")
+        st.warning("Dataset data_konstruksi.xlsx tidak ditemukan di folder dataset/. Copy file terlebih dahulu.")
 
 # ─────────────────────────────────────────────
 # TAB 3 — Model Performance
 # ─────────────────────────────────────────────
 with tab3:
-    st.subheader("Model Info")
+    st.subheader("Informasi Model Konstruksi")
     if model is not None:
         st.success("✅ Model berhasil dimuat")
         st.json({
@@ -282,15 +370,14 @@ with tab3:
             "n_features":   model.n_features_in_,
         })
 
-        st.subheader("Feature Importances")
+        st.subheader("Pengaruh Fitur Terhadap Prediksi")
         feature_names = [
-            "Jenis Produk", "Jumlah Order", "Harga",
-            "Year", "Month", "Day"
+            "Lokasi", "Jenis_Layanan", "Anggaran_Proyek_IDR", "Nilai_Kontrak", "Durasi_Bulan", "Jumlah_Proyek", "Progress_Fisik"
         ]
         importances = pd.Series(model.feature_importances_, index=feature_names)
         fig4, ax4 = plt.subplots(figsize=(7, 4))
         importances.sort_values().plot(kind="barh", ax=ax4, color="#10B981")
-        ax4.set_xlabel("Importance")
+        ax4.set_xlabel("Tingkat Pengaruh")
         st.pyplot(fig4)
     else:
         st.error("Model belum tersedia. Jalankan training pipeline terlebih dahulu.")
@@ -332,11 +419,11 @@ prediction_last_latency_seconds
 histogram_quantile(0.95, rate(prediction_latency_seconds_bucket[5m]))
 
 # ── Target / Prediction Distribution ──────────────────────
-# Total prediksi High Value
-prediction_high_value_total
+# Total proyek risiko tinggi
+prediction_high_risk_total
 
-# Total prediksi Low Value
-prediction_low_value_total
+# Total proyek risiko rendah
+prediction_low_risk_total
 
 # Confidence terakhir untuk High Value
 model_confidence_high_value

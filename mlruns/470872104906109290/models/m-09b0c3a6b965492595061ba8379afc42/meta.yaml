@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/NABILA SASA/OneDrive/Documents/File POLIJE/Project_MlOps/MLOps-Experiment/mlruns/470872104906109290/models/m-09b0c3a6b965492595061ba8379afc42/artifacts
+creation_timestamp: 1780072033625
+experiment_id: '470872104906109290'
+last_updated_timestamp: 1780072052827
+model_id: m-09b0c3a6b965492595061ba8379afc42
+model_type: null
+name: model
+source_run_id: 7bd3137f1b854d1894d884c7a9ceed02
+status: 2
+status_message: null
