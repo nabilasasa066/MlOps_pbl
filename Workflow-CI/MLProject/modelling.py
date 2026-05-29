@@ -75,30 +75,21 @@ if __name__ == "__main__":
         mlflow.log_metric("precision",precision)
         mlflow.log_metric("recall",recall)
         mlflow.log_metric( "f1_score",f1)
-        mlflow.sklearn.log_model(
-            model,
-            "model"
+        mlflow.sklearn.log_model(sk_model=model, artifact_path="model")
+
+        # --- Save model locally ---
+    MODEL_DIR = "outputs"
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
+    MODEL_PATH = os.path.join(
+                MODEL_DIR,
+                "model_proyek.pkl"
             )
 
-        MODEL_DIR = "outputs"
+    joblib.dump(model, MODEL_PATH)
 
-        os.makedirs(
-            MODEL_DIR,
-            exist_ok=True
-            )
+            # --- Log artifact to MLflow ---
+    mlflow.log_artifact(MODEL_PATH)
 
-        MODEL_PATH = os.path.join(
-            MODEL_DIR,
-            "model_proyek.pkl"
-            )
-
-        joblib.dump(
-            model,
-            MODEL_PATH
-            )
-
-        mlflow.log_artifact(
-            MODEL_PATH
-            )
-
-        print("Training selesai")
+    print("Model saved:", MODEL_PATH)
+    print("Training selesai")
