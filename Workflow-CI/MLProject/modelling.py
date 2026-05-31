@@ -2,18 +2,10 @@ import argparse
 import os
 import pandas as pd
 import joblib
-import mlflow
-import mlflow.sklearn
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    classification_report,
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score
-)
+from sklearn.metrics import classification_report, accuracy_score
 
 if __name__ == "__main__":
 
@@ -26,57 +18,37 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # =========================
-    # MLflow FIX (INI KUNCI)
-    # =========================
-    mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+    print("Loading data...")
 
-    os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ["DAGSHUB_USERNAME"]
-    os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ["DAGSHUB_TOKEN"]
+    df = pd.read_csv(args.data_path)
 
-    MODEL_DIR = "outputs"
-    os.makedirs(MODEL_DIR, exist_ok=True)
+    X = df.drop(columns=["Status"])
+    y = df["Status"]
 
-    MODEL_PATH = os.path.join(MODEL_DIR, "model_proyek.pkl")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y,
+        test_size=0.2,
+        random_state=42,
+        stratify=y
+    )
 
-    with mlflow.start_run(run_name="random_forest_konstruksi"):
+    print("Training model...")
 
-        mlflow.log_param("n_estimators", args.n_estimators)
-        mlflow.log_param("max_depth", args.max_depth)
-        mlflow.log_param("min_samples_split", args.min_samples_split)
+    model = RandomForestClassifier(
+        n_estimators=args.n_estimators,
+        max_depth=args.max_depth,
+        min_samples_split=args.min_samples_split,
+        random_state=42
+    )
 
-        df = pd.read_csv(args.data_path)
+    model.fit(X_train, y_train)
 
-        X = df.drop(columns=["Status"])
-        y = df["Status"]
+    y_pred = model.predict(X_test)
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
-        )
+    print(classification_report(y_test, y_pred))
+    print("Accuracy:", accuracy_score(y_test, y_pred))
 
-        model = RandomForestClassifier(
-            n_estimators=args.n_estimators,
-            max_depth=args.max_depth,
-            min_samples_split=args.min_samples_split,
-            random_state=42
-        )
+    os.makedirs("outputs", exist_ok=True)
+    joblib.dump(model, "outputs/model_proyek.pkl")
 
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-
-        acc = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred, average="weighted")
-        recall = recall_score(y_test, y_pred, average="weighted")
-        f1 = f1_score(y_test, y_pred, average="weighted")
-
-        mlflow.log_metric("accuracy", acc)
-        mlflow.log_metric("precision", precision)
-        mlflow.log_metric("recall", recall)
-        mlflow.log_metric("f1_score", f1)
-
-        mlflow.sklearn.log_model(model, "model")
-
-        joblib.dump(model, MODEL_PATH)
-        mlflow.log_artifact(MODEL_PATH)
-
-        print("DONE")
+    print("MODEL SAVED SUCCESS")
