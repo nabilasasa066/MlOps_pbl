@@ -10,7 +10,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score, f1_score
 
 
-mlflow.set_tracking_uri("file:./mlruns")
+tracking_uri = os.getenv(
+    "MLFLOW_TRACKING_URI",
+    "file:./mlruns"
+)
+
+mlflow.set_tracking_uri(tracking_uri)
 mlflow.set_experiment("construction-project-classification")
 
 

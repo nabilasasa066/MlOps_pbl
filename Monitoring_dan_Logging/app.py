@@ -111,7 +111,6 @@ BASE_DIR = os.path.dirname(__file__)
 MODEL_PATH = os.path.join(
     BASE_DIR,
     "..",
-    "Workflow-CI",
     "outputs",
     "model_proyek.pkl"
 )
@@ -249,7 +248,7 @@ with tab1:
                 "Lokasi": lokasi_map[lokasi],
                 "Jenis_Layanan": layanan_map[jenis_layanan],
                 "Anggaran_Proyek_IDR": anggaran,
-                "Nilai_Kontrak": nilai_kontrak,
+                "Nilai_Kontrak_Konsultan_IDR": nilai_kontrak,
                 "Durasi_Bulan": durasi_bulan,
                 "Jumlah_Proyek": jumlah_proyek,
                 "Progress_Fisik": progress_fisik
