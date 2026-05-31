@@ -5,6 +5,8 @@ import joblib
 import mlflow
 import mlflow.sklearn
 
+import dagshub
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
@@ -16,6 +18,15 @@ from sklearn.metrics import (
 )
 
 if __name__ == "__main__":
+
+    # =========================
+    # DAGSHUB CONNECT (WAJIB FIX 403)
+    # =========================
+    dagshub.init(
+        repo_owner="nabilasasa066",
+        repo_name="mlops-konstruksi",
+        mlflow=True
+    )
 
     parser = argparse.ArgumentParser()
 
@@ -30,13 +41,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
-
+    # =========================
+    # OUTPUT DIR
+    # =========================
     MODEL_DIR = "outputs"
     os.makedirs(MODEL_DIR, exist_ok=True)
 
     MODEL_PATH = os.path.join(MODEL_DIR, "model_proyek.pkl")
 
+    # =========================
+    # TRAINING + MLflow RUN
+    # =========================
     with mlflow.start_run(run_name="random_forest_konstruksi"):
 
         # log params
@@ -53,7 +68,7 @@ if __name__ == "__main__":
         X = df.drop(columns=["Status"])
         y = df["Status"]
 
-        # split data
+        # split
         X_train, X_test, y_train, y_test = train_test_split(
             X,
             y,
@@ -86,10 +101,10 @@ if __name__ == "__main__":
         mlflow.log_metric("recall", recall)
         mlflow.log_metric("f1_score", f1)
 
-        # log model to mlflow
+        # log model ke MLflow
         mlflow.sklearn.log_model(model, artifact_path="model")
 
-        # save local model
+        # save lokal
         joblib.dump(model, MODEL_PATH)
 
         # log artifact
