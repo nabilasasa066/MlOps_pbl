@@ -7,14 +7,13 @@ import mlflow.sklearn
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score, f1_score
-
-mlflow.set_tracking_uri(
-    os.getenv("MLFLOW_TRACKING_URI")
+from sklearn.metrics import (
+    classification_report,
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score
 )
-
-mlflow.set_experiment("Default")
-
 
 if __name__ == "__main__":
 
@@ -26,16 +25,28 @@ if __name__ == "__main__":
         default="Membangun_model/data_konstruksi_preprocessed/preprocessed.csv"
     )
     parser.add_argument("--n_estimators", type=int, default=100)
-    parser.add_argument("--max_depth", type=int, default=None)
+    parser.add_argument("--max_depth", type=int, default=10)
     parser.add_argument("--min_samples_split", type=int, default=2)
 
     args = parser.parse_args()
 
+    # =========================
+    # MLflow setup
+    # =========================
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
+    mlflow.set_experiment("Construction_Project_Classification")
+
+    # =========================
+    # OUTPUT DIR
+    # =========================
     MODEL_DIR = "outputs"
     os.makedirs(MODEL_DIR, exist_ok=True)
 
     MODEL_PATH = os.path.join(MODEL_DIR, "model_proyek.pkl")
 
+    # =========================
+    # TRAINING RUN
+    # =========================
     with mlflow.start_run(run_name="random_forest_konstruksi"):
 
         # log params
@@ -43,19 +54,25 @@ if __name__ == "__main__":
         mlflow.log_param("max_depth", args.max_depth)
         mlflow.log_param("min_samples_split", args.min_samples_split)
 
-        # load data
+        # load dataset
         df = pd.read_csv(args.data_path)
+
+        if "Status" not in df.columns:
+            raise ValueError("Kolom 'Status' tidak ditemukan di dataset!")
 
         X = df.drop(columns=["Status"])
         y = df["Status"]
 
+        # split data
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y,
+            X,
+            y,
             test_size=0.2,
             random_state=42,
             stratify=y
         )
 
+        # model
         model = RandomForestClassifier(
             n_estimators=args.n_estimators,
             max_depth=args.max_depth,
@@ -79,13 +96,13 @@ if __name__ == "__main__":
         mlflow.log_metric("recall", recall)
         mlflow.log_metric("f1_score", f1)
 
-        # log model ke mlflow
+        # log model to mlflow
         mlflow.sklearn.log_model(model, artifact_path="model")
 
         # save local model
         joblib.dump(model, MODEL_PATH)
 
-        # log artifact ke mlflow
+        # log artifact
         mlflow.log_artifact(MODEL_PATH)
 
         print("Model saved:", MODEL_PATH)
