@@ -13,7 +13,7 @@ mlflow.set_tracking_uri(
     os.getenv("MLFLOW_TRACKING_URI")
 )
 
-mlflow.set_experiment("construction-project-classification")
+mlflow.set_experiment("Default")
 
 
 if __name__ == "__main__":
