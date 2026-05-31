@@ -5,8 +5,6 @@ import joblib
 import mlflow
 import mlflow.sklearn
 
-import dagshub
-
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
@@ -19,22 +17,9 @@ from sklearn.metrics import (
 
 if __name__ == "__main__":
 
-    # =========================
-    # DAGSHUB CONNECT (WAJIB FIX 403)
-    # =========================
-    dagshub.init(
-        repo_owner="nabilasasa066",
-        repo_name="mlops-konstruksi",
-        mlflow=True
-    )
-
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--data_path",
-        type=str,
-        default="Membangun_model/data_konstruksi_preprocessed/preprocessed.csv"
-    )
+    parser.add_argument("--data_path", type=str)
     parser.add_argument("--n_estimators", type=int, default=100)
     parser.add_argument("--max_depth", type=int, default=10)
     parser.add_argument("--min_samples_split", type=int, default=2)
@@ -42,42 +27,33 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # =========================
-    # OUTPUT DIR
+    # MLflow FIX (INI KUNCI)
     # =========================
+    mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+
+    os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ["DAGSHUB_USERNAME"]
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ["DAGSHUB_TOKEN"]
+
     MODEL_DIR = "outputs"
     os.makedirs(MODEL_DIR, exist_ok=True)
 
     MODEL_PATH = os.path.join(MODEL_DIR, "model_proyek.pkl")
 
-    # =========================
-    # TRAINING + MLflow RUN
-    # =========================
     with mlflow.start_run(run_name="random_forest_konstruksi"):
 
-        # log params
         mlflow.log_param("n_estimators", args.n_estimators)
         mlflow.log_param("max_depth", args.max_depth)
         mlflow.log_param("min_samples_split", args.min_samples_split)
 
-        # load dataset
         df = pd.read_csv(args.data_path)
-
-        if "Status" not in df.columns:
-            raise ValueError("Kolom 'Status' tidak ditemukan di dataset!")
 
         X = df.drop(columns=["Status"])
         y = df["Status"]
 
-        # split
         X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            test_size=0.2,
-            random_state=42,
-            stratify=y
+            X, y, test_size=0.2, random_state=42, stratify=y
         )
 
-        # model
         model = RandomForestClassifier(
             n_estimators=args.n_estimators,
             max_depth=args.max_depth,
@@ -88,27 +64,19 @@ if __name__ == "__main__":
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
 
-        # metrics
         acc = accuracy_score(y_test, y_pred)
         precision = precision_score(y_test, y_pred, average="weighted")
         recall = recall_score(y_test, y_pred, average="weighted")
         f1 = f1_score(y_test, y_pred, average="weighted")
-
-        print(classification_report(y_test, y_pred))
 
         mlflow.log_metric("accuracy", acc)
         mlflow.log_metric("precision", precision)
         mlflow.log_metric("recall", recall)
         mlflow.log_metric("f1_score", f1)
 
-        # log model ke MLflow
-        mlflow.sklearn.log_model(model, artifact_path="model")
+        mlflow.sklearn.log_model(model, "model")
 
-        # save lokal
         joblib.dump(model, MODEL_PATH)
-
-        # log artifact
         mlflow.log_artifact(MODEL_PATH)
 
-        print("Model saved:", MODEL_PATH)
-        print("Training selesai")
+        print("DONE")
