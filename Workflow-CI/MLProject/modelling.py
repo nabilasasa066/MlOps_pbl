@@ -11,9 +11,7 @@ from sklearn.metrics import classification_report, accuracy_score, precision_sco
 
 
 tracking_uri = os.getenv(
-    "MLFLOW_TRACKING_URI",
-    "file:./mlruns"
-)
+    "MLFLOW_TRACKING_URI", "file:./mlruns")
 
 mlflow.set_tracking_uri(tracking_uri)
 mlflow.set_experiment("construction-project-classification")
