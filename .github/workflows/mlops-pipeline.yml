@@ -33,16 +33,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # =========================
-      # PREPROCESSING
-      # =========================
       - name: Run Preprocessing
         run: |
           python preprocessing/preprocess.py
 
-      # =========================
-      # TRAIN MODEL
-      # =========================
       - name: Train Model + MLflow Logging
         env:
           MLFLOW_TRACKING_URI: https://dagshub.com/nabilasasa066/mlops-konstruksi.mlflow

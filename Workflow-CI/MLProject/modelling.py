@@ -30,23 +30,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # =========================
-    # MLflow setup
-    # =========================
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
-    mlflow.set_experiment("Construction_Project_Classification")
 
-    # =========================
-    # OUTPUT DIR
-    # =========================
     MODEL_DIR = "outputs"
     os.makedirs(MODEL_DIR, exist_ok=True)
 
     MODEL_PATH = os.path.join(MODEL_DIR, "model_proyek.pkl")
 
-    # =========================
-    # TRAINING RUN
-    # =========================
     with mlflow.start_run(run_name="random_forest_konstruksi"):
 
         # log params
