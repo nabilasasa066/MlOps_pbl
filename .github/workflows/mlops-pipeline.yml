@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
@@ -34,22 +35,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Verify Secrets
+        run: |
+          echo "Checking DagsHub credentials..."
+
+          if [ -z "$DAGSHUB_USERNAME" ]; then
+            echo "DAGSHUB_USERNAME NOT FOUND"
+            exit 1
+          fi
+
+          if [ -z "$DAGSHUB_TOKEN" ]; then
+            echo "DAGSHUB_TOKEN NOT FOUND"
+            exit 1
+          fi
+
+          echo "Secrets loaded successfully"
+
       - name: Run Preprocessing
         run: |
           python preprocessing/preprocess.py
 
-      - name: Check Secrets
-        env:
-          DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
-        run: |
-          echo "USERNAME EXISTS:"
-          if [ -n "$DAGSHUB_USERNAME" ]; then echo "YES"; else echo "NO"; fi
-
-          echo "TOKEN EXISTS:"
-          if [ -n "$DAGSHUB_TOKEN" ]; then echo "YES"; else echo "NO"; fi
-
-      - name: Train Model 
+      - name: Train Model
         run: |
           python Workflow-CI/MLProject/modelling.py \
             --data_path Membangun_model/data_konstruksi_preprocessed/preprocessed.csv \
@@ -57,9 +63,6 @@ jobs:
             --max_depth 10 \
             --min_samples_split 2
 
-      # =========================
-      # SAVE MODEL ARTIFACT
-      # =========================
       - name: Upload Model Artifact
         uses: actions/upload-artifact@v4
         with:
